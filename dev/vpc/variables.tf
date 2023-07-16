@@ -4,7 +4,7 @@ variable "cidr_numeral" {
 }
 
 variable "vpc_name" {
-  type = string
+  type    = string
   default = "youq-dev"
 }
 
@@ -14,6 +14,7 @@ variable "availability_zones" {
 }
 
 variable "cidr_numeral_public" {
+  type = map(string)
   default = {
     "0" = "0"
     "1" = "16"
@@ -21,6 +22,7 @@ variable "cidr_numeral_public" {
 }
 
 variable "cidr_numeral_private" {
+  type = map(string)
   default = {
     "0" = "128"
     "1" = "144"
