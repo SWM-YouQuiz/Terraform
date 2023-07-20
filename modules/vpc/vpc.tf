@@ -21,27 +21,24 @@ resource "aws_internet_gateway" "default" {
 
 # NAT Gateway 
 resource "aws_nat_gateway" "nat" {
-  count = length(var.availability_zones)
 
-  allocation_id = element(aws_eip.nat.*.id, count.index)
+  allocation_id = aws_eip.nat.id
 
-  subnet_id = element(aws_subnet.public.*.id, count.index)
+  subnet_id = aws_subnet.public.0.id
 
   lifecycle {
     create_before_destroy = true
   }
 
   tags = {
-    Name = "ngw-${count.index}-${var.vpc_name}"
+    Name = "ngw-${var.vpc_name}"
   }
 
 }
 
 # Elastic IP for NAT Gateway 
 resource "aws_eip" "nat" {
-
-  count = length(var.availability_zones)
-  vpc   = true
+  vpc = true
 
   lifecycle {
     create_before_destroy = true

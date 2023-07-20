@@ -9,5 +9,5 @@ resource "aws_route" "private_nat" {
   count                  = length(var.availability_zones)
   route_table_id         = element(aws_route_table.private.*.id, count.index)
   destination_cidr_block = "0.0.0.0/0"
-  nat_gateway_id         = element(aws_nat_gateway.nat.*.id, count.index)
+  nat_gateway_id         = aws_nat_gateway.nat.id
 }
