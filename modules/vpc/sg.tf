@@ -1,3 +1,4 @@
+# sg
 resource "aws_security_group" "default" {
   name        = "default-${var.vpc_name}"
   description = "default security group for ${var.vpc_name}"
