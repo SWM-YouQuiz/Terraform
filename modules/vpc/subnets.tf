@@ -32,8 +32,6 @@ resource "aws_route_table_association" "public" {
 }
 
 
-
-
 #### PRIVATE SUBNETS
 resource "aws_subnet" "private" {
   count  = length(var.availability_zones)
