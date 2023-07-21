@@ -5,6 +5,13 @@ terraform {
       version = "5.8.0"
     }
   }
+  backend "s3" {                         # 강의는 
+    bucket         = "youq-dev-tfstate"  # s3 bucket 이름
+    key            = "terraform.tfstate" # s3 내에서 저장되는 경로를 의미합니다.
+    region         = "ap-northeast-2"
+    encrypt        = true
+    dynamodb_table = "terraform-youq-dev-lock"
+  }
 }
 
 provider "aws" {
@@ -42,4 +49,25 @@ module "eks" {
   eks_managed_node_groups = var.eks_managed_node_groups
 
   tags = var.tags
+}
+
+# S3 bucket for backend
+resource "aws_s3_bucket" "tfstate" {
+  bucket = "youq-dev-tfstate"
+
+  versioning {
+    enabled = true # Prevent from deleting tfstate file
+  }
+}
+
+# DynamoDB for terraform state lock
+resource "aws_dynamodb_table" "terraform_state_lock" {
+  name         = "terraform-youq-dev-lock"
+  hash_key     = "LockID"
+  billing_mode = "PAY_PER_REQUEST"
+
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
 }
