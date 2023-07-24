@@ -5,9 +5,9 @@ terraform {
       version = "5.8.0"
     }
   }
-  backend "s3" {                         # 강의는 
-    bucket         = "youq-dev-tfstate"  # s3 bucket 이름
-    key            = "terraform.tfstate" # s3 내에서 저장되는 경로를 의미합니다.
+  backend "s3" {
+    bucket         = "youq-dev-tfstate"
+    key            = "terraform.tfstate"
     region         = "ap-northeast-2"
     encrypt        = true
     dynamodb_table = "terraform-youq-dev-lock"
@@ -42,11 +42,33 @@ module "eks" {
   cluster_name                   = var.cluster_name
   cluster_version                = var.cluster_version
   cluster_endpoint_public_access = var.cluster_endpoint_public_access
-  cluster_addons                 = var.cluster_addons
+
+  cluster_addons = merge(var.cluster_addons, {
+    aws-ebs-csi-driver = {
+      most_recent              = true
+      service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
+    }
+  })
 
   subnet_ids = module.vpc.private_subnets
 
   eks_managed_node_groups = var.eks_managed_node_groups
+
+  tags = var.tags
+}
+
+module "ebs_csi_irsa_role" {
+  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+
+  role_name             = "AmazonEKS_EBS_CSI_DriverRole"
+  attach_ebs_csi_policy = true
+
+  oidc_providers = {
+    ex = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:ebs-csi-controller-sa"]
+    }
+  }
 
   tags = var.tags
 }
