@@ -2,23 +2,66 @@ variable "aws_region" {
   type = string
 }
 
+variable "tags" {
+  type = map(string)
+}
+
+### VPC
+
 variable "vpc_name" {
   type = string
 }
 
-variable "availability_zones" {
-  type    = list(string)
-  default = ["ap-northeast-2a", "ap-northeast-2c"]
+variable "vpc_cidr" {
+  description = "Default value for VPC CIDR"
+  type        = string
 }
 
-variable "cidr_numeral" {
-  description = "The VPC CIDR numeral (10.x.0.0/16)"
+variable "azs" {
+  description = "Availability zones for the region"
+  type        = list(string)
 }
 
-variable "cidr_numeral_public" {
-  type = map(string)
+variable "vpc_public_subnets" {
+  description = "Public subnets for the VPC"
+  type        = list(string)
 }
 
-variable "cidr_numeral_private" {
-  type = map(string)
+variable "vpc_private_subnets" {
+  description = "Private subnets for the VPC"
+  type        = list(string)
+}
+
+variable "enable_nat_gateway" {
+  type = bool
+}
+
+variable "single_nat_gateway" {
+  type = bool
+}
+
+variable "one_nat_gateway_per_az" {
+  type = bool
+}
+
+### EKS
+
+variable "cluster_name" {
+  type = string
+}
+
+variable "cluster_version" {
+  type = string
+}
+
+variable "cluster_endpoint_public_access" {
+  type = bool
+}
+
+variable "cluster_addons" {
+  type = map(any)
+}
+
+variable "eks_managed_node_groups" {
+  type = map(any)
 }

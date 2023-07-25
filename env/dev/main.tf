@@ -5,6 +5,13 @@ terraform {
       version = "5.8.0"
     }
   }
+  backend "s3" {
+    bucket         = "youq-dev-tfstate"
+    key            = "terraform.tfstate"
+    region         = "ap-northeast-2"
+    encrypt        = true
+    dynamodb_table = "terraform-youq-dev-lock"
+  }
 }
 
 provider "aws" {
@@ -14,8 +21,75 @@ provider "aws" {
 module "vpc" {
   source = "../../modules/vpc"
 
-  vpc_name             = var.vpc_name
-  cidr_numeral_public  = var.cidr_numeral_public
-  cidr_numeral_private = var.cidr_numeral_private
-  cidr_numeral         = var.cidr_numeral
+  vpc_name            = var.vpc_name
+  vpc_cidr            = var.vpc_cidr
+  azs                 = var.azs
+  vpc_public_subnets  = var.vpc_public_subnets
+  vpc_private_subnets = var.vpc_private_subnets
+
+  enable_nat_gateway     = var.enable_nat_gateway
+  single_nat_gateway     = var.single_nat_gateway
+  one_nat_gateway_per_az = var.one_nat_gateway_per_az
+
+  tags = var.tags
+}
+
+module "eks" {
+  source = "../../modules/eks"
+
+  vpc_id = module.vpc.vpc_id
+
+  cluster_name                   = var.cluster_name
+  cluster_version                = var.cluster_version
+  cluster_endpoint_public_access = var.cluster_endpoint_public_access
+
+  cluster_addons = merge(var.cluster_addons, {
+    aws-ebs-csi-driver = {
+      most_recent              = true
+      service_account_role_arn = module.ebs_csi_irsa_role.iam_role_arn
+    }
+  })
+
+  subnet_ids = module.vpc.private_subnets
+
+  eks_managed_node_groups = var.eks_managed_node_groups
+
+  tags = var.tags
+}
+
+module "ebs_csi_irsa_role" {
+  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+
+  role_name             = "AmazonEKS_EBS_CSI_DriverRole"
+  attach_ebs_csi_policy = true
+
+  oidc_providers = {
+    ex = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:ebs-csi-controller-sa"]
+    }
+  }
+
+  tags = var.tags
+}
+
+# S3 bucket for backend
+resource "aws_s3_bucket" "tfstate" {
+  bucket = "youq-dev-tfstate"
+
+  versioning {
+    enabled = true # Prevent from deleting tfstate file
+  }
+}
+
+# DynamoDB for terraform state lock
+resource "aws_dynamodb_table" "terraform_state_lock" {
+  name         = "terraform-youq-dev-lock"
+  hash_key     = "LockID"
+  billing_mode = "PAY_PER_REQUEST"
+
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
 }
