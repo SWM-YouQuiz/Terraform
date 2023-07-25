@@ -14,6 +14,23 @@ terraform {
   }
 }
 
+provider "kubernetes" {
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
+  }
+}
+
+provider "helm" {
+  kubernetes {
+    config_path = "~/.kube/config"
+  }
+}
+
 provider "aws" {
   region = var.aws_region
 }
@@ -25,7 +42,9 @@ module "vpc" {
   vpc_cidr            = var.vpc_cidr
   azs                 = var.azs
   vpc_public_subnets  = var.vpc_public_subnets
+  public_subnet_tags  = var.public_subnet_tags
   vpc_private_subnets = var.vpc_private_subnets
+  private_subnet_tags = var.private_subnet_tags
 
   enable_nat_gateway     = var.enable_nat_gateway
   single_nat_gateway     = var.single_nat_gateway
@@ -72,6 +91,62 @@ module "ebs_csi_irsa_role" {
 
   tags = var.tags
 }
+
+module "load_balancer_controller_irsa_role" {
+  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+
+  role_name                              = "aws-load-balancer-controller"
+  attach_load_balancer_controller_policy = true
+
+  oidc_providers = {
+    ex = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:aws-load-balancer-controller"]
+    }
+  }
+}
+
+resource "kubernetes_service_account" "aws-load-balancer-controller" {
+  metadata {
+    name      = "aws-load-balancer-controller"
+    namespace = "kube-system"
+    annotations = {
+      "eks.amazonaws.com/role-arn" = module.load_balancer_controller_irsa_role.iam_role_arn
+    }
+  }
+}
+
+resource "helm_release" "aws-load-balancer-controller" {
+  depends_on = [module.load_balancer_controller_irsa_role]
+  name       = "aws-load-balancer-controller"
+
+  repository = "https://aws.github.io/eks-charts"
+  chart      = "aws-load-balancer-controller"
+
+  namespace = "kube-system"
+
+  set {
+    name  = "image.repository"
+    value = "602401143452.dkr.ecr.ap-northeast-2.amazonaws.com/amazon/aws-load-balancer-controller" # Changes based on Region - This is for us-east-1 Additional Reference: https://docs.aws.amazon.com/eks/latest/userguide/add-ons-images.html
+  }
+
+  set {
+    name  = "serviceAccount.create"
+    value = "false"
+  }
+
+  set {
+    name  = "serviceAccount.name"
+    value = "aws-load-balancer-controller"
+  }
+
+  set {
+    name  = "clusterName"
+    value = module.eks.cluster_name
+  }
+
+}
+
 
 # S3 bucket for backend
 resource "aws_s3_bucket" "tfstate" {
