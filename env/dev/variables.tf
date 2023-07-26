@@ -52,6 +52,11 @@ variable "one_nat_gateway_per_az" {
   type = bool
 }
 
+### ECR
+variable "repository_names" {
+  type = list(string)
+}
+
 ### EKS
 
 variable "cluster_name" {

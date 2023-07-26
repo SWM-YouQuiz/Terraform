@@ -53,6 +53,14 @@ module "vpc" {
   tags = var.tags
 }
 
+module "ecr" {
+  source = "../../modules/ecr"
+
+  repository_names = var.repository_names
+
+  tags = var.tags
+}
+
 module "eks" {
   source = "../../modules/eks"
 
