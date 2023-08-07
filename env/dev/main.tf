@@ -163,6 +163,14 @@ resource "helm_release" "aws-load-balancer-controller" {
 
 }
 
+module "jenkins" {
+  source = "../../modules/jenkins"
+
+  oidc_provider_arn = module.eks.oidc_provider_arn
+
+  swagger_bucket_arn = module.s3.swagger_bucket_arn
+}
+
 
 # S3 bucket for backend
 resource "aws_s3_bucket" "tfstate" {
