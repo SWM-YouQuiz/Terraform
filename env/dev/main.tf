@@ -61,6 +61,14 @@ module "ecr" {
   tags = var.tags
 }
 
+module "s3" {
+  source = "../../modules/s3"
+
+  oidc_provider_arn = module.eks.oidc_provider_arn
+
+  tags = var.tags
+}
+
 module "eks" {
   source = "../../modules/eks"
 
