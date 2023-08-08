@@ -27,9 +27,17 @@ variable "vpc_public_subnets" {
   type        = list(string)
 }
 
+variable "public_subnet_tags" {
+  type = map(string)
+}
+
 variable "vpc_private_subnets" {
   description = "Private subnets for the VPC"
   type        = list(string)
+}
+
+variable "private_subnet_tags" {
+  type = map(string)
 }
 
 variable "enable_nat_gateway" {
@@ -42,6 +50,11 @@ variable "single_nat_gateway" {
 
 variable "one_nat_gateway_per_az" {
   type = bool
+}
+
+### ECR
+variable "repository_names" {
+  type = list(string)
 }
 
 ### EKS

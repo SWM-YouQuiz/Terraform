@@ -18,9 +18,17 @@ variable "vpc_public_subnets" {
   type        = list(string)
 }
 
+variable "public_subnet_tags" {
+  type = map(string)
+}
+
 variable "vpc_private_subnets" {
   description = "Private subnets for the VPC"
   type        = list(string)
+}
+
+variable "private_subnet_tags" {
+  type = map(string)
 }
 
 variable "enable_nat_gateway" {
