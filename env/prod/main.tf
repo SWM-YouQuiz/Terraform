@@ -25,6 +25,12 @@ provider "kubernetes" {
   }
 }
 
+provider "helm" {
+  kubernetes {
+    config_path = "~/.kube/config"
+  }
+}
+
 # S3 bucket for backend
 resource "aws_s3_bucket" "tfstate" {
   bucket = "youq-prod-tfstate"
